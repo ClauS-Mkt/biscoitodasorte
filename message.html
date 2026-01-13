@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mensagem — Biscoito da Sorte Bíblico</title>
+  <meta name="description" content="Mensagem bíblica aleatória" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Mensagem do Biscoito</h1>
+    </header>
+
+    <section id="messageCard" class="message" role="dialog" aria-live="polite">
+      <blockquote id="messageText" class="message-text">Carregando...</blockquote>
+      <footer id="messageRef" class="message-ref"></footer>
+
+      <div class="actions">
+        <button id="shareBtn" class="btn outline">Copiar</button>
+        <a id="backBtn" class="btn" href="index.html">Voltar</a>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <small id="note">Feito para estudos • Sem opção para escolher outra mensagem nesta tela</small>
+    </footer>
+  </main>
+
+  <script src="message.js" defer></script>
+</body>
+</html>

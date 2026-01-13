@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Biscoito da Sorte Bíblico</title>
+  <meta name="description" content="Clique no biscoito e receba uma mensagem bíblica aleatória" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Biscoito da Sorte Bíblico</h1>
+      <p class="subtitle">Clique no biscoito e receba uma mensagem inspiradora</p>
+    </header>
+
+    <section class="cookie-area" aria-hidden="false">
+      <button id="cookieBtn" class="cookie" aria-label="Quebrar biscoito da sorte">
+        <svg viewBox="0 0 200 200" width="220" height="220" role="img" aria-hidden="true">
+          <circle cx="100" cy="100" r="72" fill="#D69A5A" stroke="#8C5C2E" stroke-width="6"/>
+          <ellipse cx="78" cy="82" rx="6" ry="4" fill="#8C5C2E"/>
+          <ellipse cx="122" cy="92" rx="7" ry="5" fill="#8C5C2E"/>
+          <ellipse cx="110" cy="120" rx="5" ry="3" fill="#8C5C2E"/>
+          <ellipse cx="86" cy="122" rx="4" ry="3" fill="#8C5C2E"/>
+          <path id="crack" d="M80 90 C95 100, 105 110, 120 100" stroke="#6B3F1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <div class="hint">Toque no biscoito</div>
+      <p class="subtitle" style="margin-top:12px;color:var(--muted); font-size:0.9rem;">
+        Ao tocar, uma nova tela abrirá mostrando a mensagem (sem opção de escolher outra).
+      </p>
+    </section>
+
+    <footer class="footer">
+      <small>Feito para estudos • Publiquei facilmente no GitHub Pages</small>
+    </footer>
+  </main>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
