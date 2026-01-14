@@ -11,9 +11,8 @@ const note = document.getElementById('note');
 const photoShareBtn = document.getElementById('photoShareBtn');
 const photoInput = document.getElementById('photoInput');
 
-// === CONFIG DO UPLOAD (AJUSTE AQUI) ===
-const WORKER_UPLOAD_URL = "http://localhost:3000/upload"; // <-- troque
-// ======================================
+// URL do servidor local para upload
+const UPLOAD_URL = "http://localhost:3000/upload";
 
 function setUploadStatus(container, text, ok = false) {
   let el = container.querySelector("#uploadStatus");
@@ -29,14 +28,15 @@ function setUploadStatus(container, text, ok = false) {
   el.style.color = ok ? "#00C756" : "#123955";
 }
 
+
 async function uploadToWorker(blob, caption) {
   const fd = new FormData();
-  fd.append("file", new File([blob], "polaroid.jpg", { type: "image/jpeg" }));
+  fd.append("image", new File([blob], "polaroid.jpg", { type: "image/jpeg" })); // O nome do campo é 'image'
   fd.append("caption", caption || "");
 
-  const res = await fetch(WORKER_UPLOAD_URL, {
+  const res = await fetch("http://localhost:3000/upload", {  // A URL do seu servidor local
     method: "POST",
-    body: fd,  // Sem o cabeçalho de autenticação
+    body: fd,  // Envia o FormData com a imagem
   });
 
   if (!res.ok) {
@@ -45,7 +45,6 @@ async function uploadToWorker(blob, caption) {
   }
   return res.json().catch(() => ({}));
 }
-
 
 // desenha a foto no estilo "cover" dentro de uma área
 function drawCover(ctx, img, x, y, w, h) {
@@ -69,63 +68,77 @@ function drawCaption(ctx, text, x, y, w, h) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // tenta tamanhos (cabe melhor)
-  const sizes = [13, 12, 11, 10];
-  let lines = [text];
-
-  for (const fs of sizes) {
-    ctx.font = `700 ${fs}px monospace`;
-
-    // quebra em palavras e limita em 2 linhas
+  // Ajuste: Reduz dinamicamente o tamanho da fonte e permite mais linhas até caber tudo
+  // Ajuste: restringe a largura do texto à largura da foto (182px), centralizando sobre a foto
+  const photoW = 182;
+  const photoX = 9;
+  const minFontSize = 8;
+  let fontSize = 13;
+  let lines = [];
+  let fits = false;
+  const maxAttempts = 30;
+  let attempt = 0;
+  while (!fits && fontSize >= minFontSize && attempt < maxAttempts) {
+    ctx.font = `700 ${fontSize}px monospace`;
+    // Quebra em linhas para caber na largura da foto
     const words = (text || "").split(/\s+/).filter(Boolean);
-    const maxLines = 2;
-    const out = [];
+    let tempLines = [];
     let line = "";
-
-    for (const word of words) {
-      const test = line ? line + " " + word : word;
-      if (ctx.measureText(test).width <= w) {
+    for (let i = 0; i < words.length; i++) {
+      const test = line ? line + " " + words[i] : words[i];
+      if (ctx.measureText(test).width <= photoW) {
         line = test;
       } else {
-        if (line) out.push(line);
-        line = word;
-        if (out.length === maxLines - 1) break;
+        if (line) tempLines.push(line);
+        line = words[i];
       }
     }
-    if (line && out.length < maxLines) out.push(line);
-
-    // se sobrou palavra, coloca reticências na última linha
-    let final = out;
-    if (words.join(" ").length > out.join(" ").length) {
-      const last = out[out.length - 1] || "";
-      let cut = last;
-      while (ctx.measureText(cut + "…").width > w && cut.length > 0) {
-        cut = cut.slice(0, -1);
-      }
-      final = out.slice(0, -1).concat((cut || "").trim() + "…");
+    if (line) tempLines.push(line);
+    const lineH = fontSize + 2;
+    if (tempLines.length * lineH <= h) {
+      lines = tempLines;
+      fits = true;
+    } else {
+      fontSize--;
     }
-
-    // checa se 2 linhas cabem na altura
-    const lineH = fs + 2;
-    if (final.length * lineH <= h) {
-      lines = final;
-      break;
-    }
+    attempt++;
   }
-
-  // desenha centralizado verticalmente dentro do h
-  const fsMatch = /(\d+)px/.exec(ctx.font);
-  const fs = fsMatch ? parseInt(fsMatch[1], 10) : 12;
-  const lineH = fs + 2;
-
+  // Se não couber nem no mínimo, faz o corte e adiciona reticências
+  if (!fits) {
+    ctx.font = `700 ${minFontSize}px monospace`;
+    const words = (text || "").split(/\s+/).filter(Boolean);
+    let tempLines = [];
+    let line = "";
+    for (let i = 0; i < words.length; i++) {
+      const test = line ? line + " " + words[i] : words[i];
+      if (ctx.measureText(test + "…").width <= photoW) {
+        line = test;
+      } else {
+        if (line) tempLines.push(line);
+        line = words[i];
+        if ((tempLines.length + 1) * (minFontSize + 2) > h) {
+          // Corta e põe reticências
+          let cut = line;
+          while (ctx.measureText(cut + "…").width > photoW && cut.length > 0) {
+            cut = cut.slice(0, -1);
+          }
+          tempLines.push((cut || "").trim() + "…");
+          break;
+        }
+      }
+    }
+    if (line && tempLines.length * (minFontSize + 2) <= h) tempLines.push(line);
+    lines = tempLines;
+    fontSize = minFontSize;
+  }
+  // desenha centralizado verticalmente dentro do h e horizontalmente sobre a foto
+  const lineH = fontSize + 2;
   const totalH = lines.length * lineH;
   let cy = y + h / 2 - totalH / 2 + lineH / 2;
-
   for (const l of lines) {
-    ctx.fillText(l, x + w / 2, cy);
+    ctx.fillText(l, photoX + photoW / 2, cy);
     cy += lineH;
   }
-
   ctx.restore();
 }
 
@@ -193,14 +206,11 @@ if (photoShareBtn && photoInput) {
       publishBtn.disabled = true;
       publishBtn.textContent = "Enviando…";
       setUploadStatus(previewContainer, "Enviando para o painel…");
-
       canvas.toBlob(async (blob) => {
         try {
-          // opcional: também manda caption separado no feed
           const result = await uploadToWorker(blob, captionInside);
           setUploadStatus(previewContainer, "Enviado ✅", true);
           publishBtn.textContent = "Publicado ✅";
-          // limpa input para permitir outra foto
           photoInput.value = "";
           console.log("Upload OK:", result);
         } catch (err) {
