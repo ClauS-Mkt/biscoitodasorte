@@ -38,9 +38,10 @@ if (photoShareBtn && photoInput) {
       const fullText = ref ? `${text} — ${ref}` : text;
 
       // Quebra em linhas se necessário
-      ctx.font = `bold ${Math.floor(canvas.width/18)}px Segoe UI, Arial, sans-serif`;
+      const fontSize = Math.floor(canvas.width/18);
+      ctx.font = `bold ${fontSize}px Segoe UI, Arial, sans-serif`;
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textBaseline = 'top';
       const maxWidth = canvas.width * 0.85;
       const words = fullText.split(' ');
       let line = '';
@@ -57,24 +58,65 @@ if (photoShareBtn && photoInput) {
       }
       linesArr.push(line);
 
-      // Fundo branco semi-transparente para contraste
-      const padding = 24;
-      const lineHeight = Math.floor(canvas.width/18) + 10;
+      // Área do texto na parte de baixo
+      const paddingX = 32;
+      const paddingY = 18;
+      const lineHeight = fontSize + 8;
       const totalHeight = linesArr.length * lineHeight;
-      const yStart = canvas.height/2 - totalHeight/2;
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillRect(
-        canvas.width*0.05,
-        yStart - padding/2,
-        canvas.width*0.9,
-        totalHeight + padding
-      );
+      const boxHeight = totalHeight + paddingY*2;
+      const boxWidth = canvas.width * 0.92;
+      const boxX = (canvas.width - boxWidth) / 2;
+      const boxY = canvas.height - boxHeight - 24;
+
+      // Sombra do box
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.filter = 'blur(8px)';
+      ctx.fillStyle = '#123955';
+      ctx.beginPath();
+      ctx.moveTo(boxX + 18, boxY + boxHeight);
+      ctx.lineTo(boxX + boxWidth - 18, boxY + boxHeight);
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth, boxY + boxHeight - 18);
+      ctx.lineTo(boxX + boxWidth, boxY + 18);
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth - 18, boxY);
+      ctx.lineTo(boxX + 18, boxY);
+      ctx.quadraticCurveTo(boxX, boxY, boxX, boxY + 18);
+      ctx.lineTo(boxX, boxY + boxHeight - 18);
+      ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX + 18, boxY + boxHeight);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Fundo branco arredondado
+      ctx.save();
+      ctx.globalAlpha = 0.82;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(boxX + 18, boxY + boxHeight);
+      ctx.lineTo(boxX + boxWidth - 18, boxY + boxHeight);
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth, boxY + boxHeight - 18);
+      ctx.lineTo(boxX + boxWidth, boxY + 18);
+      ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth - 18, boxY);
+      ctx.lineTo(boxX + 18, boxY);
+      ctx.quadraticCurveTo(boxX, boxY, boxX, boxY + 18);
+      ctx.lineTo(boxX, boxY + boxHeight - 18);
+      ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX + 18, boxY + boxHeight);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
 
       // Texto principal
+      ctx.save();
+      ctx.font = `bold ${fontSize}px Segoe UI, Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
       ctx.fillStyle = '#123955';
+      ctx.shadowColor = '#b6d6f2';
+      ctx.shadowBlur = 2;
       linesArr.forEach((l, i) => {
-        ctx.fillText(l.trim(), canvas.width/2, yStart + i*lineHeight);
+        ctx.fillText(l.trim(), canvas.width/2, boxY + paddingY + i*lineHeight);
       });
+      ctx.restore();
 
       // Mostra preview na tela
       const previewContainer = document.getElementById('photoPreviewContainer');
