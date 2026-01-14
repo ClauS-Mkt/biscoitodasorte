@@ -36,8 +36,7 @@ async function uploadToWorker(blob, caption) {
 
   const res = await fetch(WORKER_UPLOAD_URL, {
     method: "POST",
-    headers: { Authorization: `Bearer ${PUBLISH_TOKEN}` },
-    body: fd,
+    body: fd,  // Sem o cabeçalho de autenticação
   });
 
   if (!res.ok) {
