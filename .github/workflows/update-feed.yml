@@ -1,0 +1,47 @@
+name: Atualizar feed.json
+
+on:
+  push:
+    paths:
+      - 'uploads/*'  # Ações são acionadas sempre que uma imagem é enviada para a pasta "uploads"
+      
+jobs:
+  update_feed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Criar feed.json
+        run: |
+          # Verifica se a pasta "uploads" existe
+          if [ ! -d "./uploads" ]; then
+            echo "A pasta uploads não existe."
+            exit 1
+          fi
+
+          # Cria um arquivo feed.json com as imagens da pasta "uploads"
+          echo "Criando feed.json..."
+          
+          echo '{"items": [' > feed.json
+
+          # Loop para pegar todas as imagens na pasta uploads e adicionar ao feed.json
+          for file in uploads/*.jpg; do
+            echo "  {" >> feed.json
+            echo "    \"url\": \"https://<username>.github.io/<repository-name>/uploads/$(basename "$file")\"," >> feed.json
+            echo "    \"createdAt\": \"$(date --date='now' --utc +%FT%TZ\")\"" >> feed.json
+            echo "  }," >> feed.json
+          done
+
+          # Remove a última vírgula e fecha o JSON
+          sed -i '$ s/,$//' feed.json
+          echo "]}" >> feed.json
+
+      - name: Commit e push do feed.json
+        run: |
+          git config --global user.name "Your GitHub Username"
+          git config --global user.email "your-email@example.com"
+          git add feed.json
+          git commit -m "Atualizar feed.json com novas imagens"
+          git push
