@@ -12,7 +12,7 @@ const photoShareBtn = document.getElementById('photoShareBtn');
 const photoInput = document.getElementById('photoInput');
 
 // URL do servidor local para upload
-const UPLOAD_URL = "http://localhost:3000/upload";
+const UPLOAD_URL = "https://maisie-transonic-unbusily.ngrok-free.dev/uploads/";
 
 function setUploadStatus(container, text, ok = false) {
   let el = container.querySelector("#uploadStatus");
@@ -34,7 +34,7 @@ async function uploadToWorker(blob, caption) {
   fd.append("image", new File([blob], "polaroid.jpg", { type: "image/jpeg" })); // O nome do campo é 'image'
   fd.append("caption", caption || "");
 
-  const res = await fetch("http://localhost:3000/upload", {  // A URL do seu servidor local
+  const res = await fetch("https://maisie-transonic-unbusily.ngrok-free.dev/uploads/", {  // A URL do seu servidor local
     method: "POST",
     body: fd,  // Envia o FormData com a imagem
   });
