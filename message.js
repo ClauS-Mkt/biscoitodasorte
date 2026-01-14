@@ -76,18 +76,51 @@ if (photoShareBtn && photoInput) {
         ctx.fillText(l.trim(), canvas.width/2, yStart + i*lineHeight);
       });
 
-      // Compartilhar ou abrir imagem
-      canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        if (navigator.canShare && navigator.canShare({ files: [new File([blob], "biscoito.jpg", {type: blob.type})] })) {
-          navigator.share({
-            files: [new File([blob], "biscoito.jpg", {type: blob.type})],
-            title: 'Minha mensagem do Biscoito da Sorte'
-          });
-        } else {
-          window.open(url, '_blank');
-        }
-      }, 'image/jpeg', 0.92);
+      // Mostra preview na tela
+      const previewContainer = document.getElementById('photoPreviewContainer');
+      previewContainer.innerHTML = '';
+      const previewImg = document.createElement('img');
+      previewImg.src = canvas.toDataURL('image/jpeg', 0.92);
+      previewImg.alt = 'Prévia da foto com mensagem';
+      previewImg.style.maxWidth = '100%';
+      previewImg.style.borderRadius = '12px';
+      previewImg.style.boxShadow = '0 2px 12px #b6d6f2';
+      previewContainer.appendChild(previewImg);
+
+      // Botão de baixar
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = '⬇️ Baixar imagem';
+      downloadBtn.className = 'btn outline';
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = previewImg.src;
+        a.download = 'biscoito-mensagem.jpg';
+        a.click();
+      };
+      previewContainer.appendChild(downloadBtn);
+
+      // Botão de compartilhar (se suportado)
+      if (navigator.canShare) {
+        const shareBtn = document.createElement('button');
+        shareBtn.textContent = '📤 Compartilhar imagem';
+        shareBtn.className = 'btn';
+        shareBtn.onclick = async () => {
+          canvas.toBlob(async (blob) => {
+            const fileToShare = new File([blob], 'biscoito-mensagem.jpg', { type: blob.type });
+            try {
+              await navigator.share({
+                files: [fileToShare],
+                title: 'Minha mensagem do Biscoito da Sorte'
+              });
+            } catch (e) {
+              alert('Não foi possível compartilhar a imagem.');
+            }
+          }, 'image/jpeg', 0.92);
+        };
+        previewContainer.appendChild(shareBtn);
+      }
+
+      previewContainer.style.display = 'flex';
     };
   });
 }
