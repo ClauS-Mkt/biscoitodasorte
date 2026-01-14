@@ -11,160 +11,209 @@ const note = document.getElementById('note');
 const photoShareBtn = document.getElementById('photoShareBtn');
 const photoInput = document.getElementById('photoInput');
 
+// === CONFIG DO UPLOAD (AJUSTE AQUI) ===
+const WORKER_UPLOAD_URL = "https://fotopainelmdl.clauber.workers.dev/upload"; // <-- troque
+const PUBLISH_TOKEN = "uygfw78fh7sv8093rfb"; // <-- troque (o mesmo do Worker)
+// ======================================
+
+function setUploadStatus(container, text, ok = false) {
+  let el = container.querySelector("#uploadStatus");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "uploadStatus";
+    el.style.marginTop = "10px";
+    el.style.fontWeight = "800";
+    el.style.fontFamily = "monospace";
+    container.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.color = ok ? "#00C756" : "#123955";
+}
+
+async function uploadToWorker(blob, caption) {
+  const fd = new FormData();
+  fd.append("file", new File([blob], "polaroid.jpg", { type: "image/jpeg" }));
+  fd.append("caption", caption || "");
+
+  const res = await fetch(WORKER_UPLOAD_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${PUBLISH_TOKEN}` },
+    body: fd,
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${txt}`);
+  }
+  return res.json().catch(() => ({}));
+}
+
+// desenha a foto no estilo "cover" dentro de uma área
+function drawCover(ctx, img, x, y, w, h) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+
+  const scale = Math.max(w / iw, h / ih);
+  const sw = w / scale;
+  const sh = h / scale;
+
+  const sx = (iw - sw) / 2;
+  const sy = (ih - sh) / 2;
+
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+// escreve a frase em até 2 linhas dentro da área 46px
+function drawCaption(ctx, text, x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = "#111";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // tenta tamanhos (cabe melhor)
+  const sizes = [13, 12, 11, 10];
+  let lines = [text];
+
+  for (const fs of sizes) {
+    ctx.font = `700 ${fs}px monospace`;
+
+    // quebra em palavras e limita em 2 linhas
+    const words = (text || "").split(/\s+/).filter(Boolean);
+    const maxLines = 2;
+    const out = [];
+    let line = "";
+
+    for (const word of words) {
+      const test = line ? line + " " + word : word;
+      if (ctx.measureText(test).width <= w) {
+        line = test;
+      } else {
+        if (line) out.push(line);
+        line = word;
+        if (out.length === maxLines - 1) break;
+      }
+    }
+    if (line && out.length < maxLines) out.push(line);
+
+    // se sobrou palavra, coloca reticências na última linha
+    let final = out;
+    if (words.join(" ").length > out.join(" ").length) {
+      const last = out[out.length - 1] || "";
+      let cut = last;
+      while (ctx.measureText(cut + "…").width > w && cut.length > 0) {
+        cut = cut.slice(0, -1);
+      }
+      final = out.slice(0, -1).concat((cut || "").trim() + "…");
+    }
+
+    // checa se 2 linhas cabem na altura
+    const lineH = fs + 2;
+    if (final.length * lineH <= h) {
+      lines = final;
+      break;
+    }
+  }
+
+  // desenha centralizado verticalmente dentro do h
+  const fsMatch = /(\d+)px/.exec(ctx.font);
+  const fs = fsMatch ? parseInt(fsMatch[1], 10) : 12;
+  const lineH = fs + 2;
+
+  const totalH = lines.length * lineH;
+  let cy = y + h / 2 - totalH / 2 + lineH / 2;
+
+  for (const l of lines) {
+    ctx.fillText(l, x + w / 2, cy);
+    cy += lineH;
+  }
+
+  ctx.restore();
+}
+
 if (photoShareBtn && photoInput) {
   photoShareBtn.addEventListener('click', () => {
     photoInput.value = '';
     photoInput.click();
   });
 
-  photoInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  photoInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const img = new window.Image();
-    img.src = URL.createObjectURL(file);
+  const previewContainer = document.getElementById("photoPreviewContainer");
+  previewContainer.style.display = "flex";
+  previewContainer.innerHTML = "";
 
-    img.onload = () => {
-      // Cria canvas do tamanho da foto
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
+  // Texto que vai dentro da polaroid (se quiser só a frase sem referência, troque para messageText.textContent)
+  const text = (messageText.textContent || "").trim();
+  const ref = (messageRef.textContent || "").trim();
+  const captionInside = ref ? `${text} — ${ref}` : text;
 
-      // Monta texto (mensagem + referência)
-      const text = messageText.textContent || '';
-      const ref = messageRef.textContent || '';
-      const fullText = ref ? `${text} — ${ref}` : text;
+  // carrega imagem capturada
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
 
-      // Quebra em linhas se necessário
-      const fontSize = Math.floor(canvas.width/18);
-      ctx.font = `bold ${fontSize}px Segoe UI, Arial, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      const maxWidth = canvas.width * 0.85;
-      const words = fullText.split(' ');
-      let line = '';
-      let linesArr = [];
-      for (let word of words) {
-        let testLine = line + word + ' ';
-        let metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && line !== '') {
-          linesArr.push(line);
-          line = word + ' ';
-        } else {
-          line = testLine;
+  img.onload = () => {
+    // CANVAS no tamanho exato da polaroid do painel
+    const canvas = document.createElement("canvas");
+    canvas.width = 200;
+    canvas.height = 230;
+    const ctx = canvas.getContext("2d");
+
+    // fundo branco
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, 200, 230);
+
+    // foto (182x175) em (9,9) com cover
+    drawCover(ctx, img, 9, 9, 182, 175);
+
+    // frase na faixa inferior (46px)
+    // área começa em y=230-46=184
+    drawCaption(ctx, captionInside, 0, 184, 200, 46);
+
+    // preview da polaroid pronta
+    const previewImg = document.createElement("img");
+    previewImg.src = canvas.toDataURL("image/jpeg", 0.92);
+    previewImg.alt = "Prévia polaroid";
+    previewImg.style.width = "200px";
+    previewImg.style.height = "230px";
+    previewImg.style.borderRadius = "8px";
+    previewImg.style.boxShadow = "0 10px 25px rgba(0,0,0,.35)";
+    previewContainer.appendChild(previewImg);
+
+    // botão PUBLICAR (só aparece depois da prévia)
+    const publishBtn = document.createElement("button");
+    publishBtn.className = "btn";
+    publishBtn.textContent = "📺 Publicar no painel";
+    previewContainer.appendChild(publishBtn);
+
+    // status
+    setUploadStatus(previewContainer, "Pronto para publicar.");
+
+    publishBtn.onclick = async () => {
+      publishBtn.disabled = true;
+      publishBtn.textContent = "Enviando…";
+      setUploadStatus(previewContainer, "Enviando para o painel…");
+
+      canvas.toBlob(async (blob) => {
+        try {
+          // opcional: também manda caption separado no feed
+          const result = await uploadToWorker(blob, captionInside);
+          setUploadStatus(previewContainer, "Enviado ✅", true);
+          publishBtn.textContent = "Publicado ✅";
+          // limpa input para permitir outra foto
+          photoInput.value = "";
+          console.log("Upload OK:", result);
+        } catch (err) {
+          console.error(err);
+          setUploadStatus(previewContainer, "Erro ao enviar ❌ (veja o console)");
+          publishBtn.disabled = false;
+          publishBtn.textContent = "📺 Publicar no painel";
         }
-      }
-      linesArr.push(line);
-
-      // Área do texto na parte de baixo
-      const paddingX = 32;
-      const paddingY = 18;
-      const lineHeight = fontSize + 8;
-      const totalHeight = linesArr.length * lineHeight;
-      const boxHeight = totalHeight + paddingY*2;
-      const boxWidth = canvas.width * 0.92;
-      const boxX = (canvas.width - boxWidth) / 2;
-      const boxY = canvas.height - boxHeight - 24;
-
-      // Sombra do box
-      ctx.save();
-      ctx.globalAlpha = 0.18;
-      ctx.filter = 'blur(8px)';
-      ctx.fillStyle = '#123955';
-      ctx.beginPath();
-      ctx.moveTo(boxX + 18, boxY + boxHeight);
-      ctx.lineTo(boxX + boxWidth - 18, boxY + boxHeight);
-      ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth, boxY + boxHeight - 18);
-      ctx.lineTo(boxX + boxWidth, boxY + 18);
-      ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth - 18, boxY);
-      ctx.lineTo(boxX + 18, boxY);
-      ctx.quadraticCurveTo(boxX, boxY, boxX, boxY + 18);
-      ctx.lineTo(boxX, boxY + boxHeight - 18);
-      ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX + 18, boxY + boxHeight);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // Fundo branco arredondado
-      ctx.save();
-      ctx.globalAlpha = 0.82;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.moveTo(boxX + 18, boxY + boxHeight);
-      ctx.lineTo(boxX + boxWidth - 18, boxY + boxHeight);
-      ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth, boxY + boxHeight - 18);
-      ctx.lineTo(boxX + boxWidth, boxY + 18);
-      ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth - 18, boxY);
-      ctx.lineTo(boxX + 18, boxY);
-      ctx.quadraticCurveTo(boxX, boxY, boxX, boxY + 18);
-      ctx.lineTo(boxX, boxY + boxHeight - 18);
-      ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX + 18, boxY + boxHeight);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // Texto principal
-      ctx.save();
-      ctx.font = `bold ${fontSize}px Segoe UI, Arial, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = '#123955';
-      ctx.shadowColor = '#b6d6f2';
-      ctx.shadowBlur = 2;
-      linesArr.forEach((l, i) => {
-        ctx.fillText(l.trim(), canvas.width/2, boxY + paddingY + i*lineHeight);
-      });
-      ctx.restore();
-
-      // Mostra preview na tela
-      const previewContainer = document.getElementById('photoPreviewContainer');
-      previewContainer.innerHTML = '';
-      const previewImg = document.createElement('img');
-      previewImg.src = canvas.toDataURL('image/jpeg', 0.92);
-      previewImg.alt = 'Prévia da foto com mensagem';
-      previewImg.style.maxWidth = '100%';
-      previewImg.style.borderRadius = '12px';
-      previewImg.style.boxShadow = '0 2px 12px #b6d6f2';
-      previewContainer.appendChild(previewImg);
-
-      // Botão de baixar
-      const downloadBtn = document.createElement('button');
-      downloadBtn.textContent = '⬇️ Baixar imagem';
-      downloadBtn.className = 'btn outline';
-      downloadBtn.onclick = () => {
-        const a = document.createElement('a');
-        a.href = previewImg.src;
-        a.download = 'biscoito-mensagem.jpg';
-        a.click();
-      };
-      previewContainer.appendChild(downloadBtn);
-
-      // Botão de compartilhar (se suportado)
-      if (navigator.canShare) {
-        const shareBtn = document.createElement('button');
-        shareBtn.textContent = '📤 Compartilhar imagem';
-        shareBtn.className = 'btn';
-        shareBtn.onclick = async () => {
-          canvas.toBlob(async (blob) => {
-            const fileToShare = new File([blob], 'biscoito-mensagem.jpg', { type: blob.type });
-            try {
-              await navigator.share({
-                files: [fileToShare],
-                title: 'Minha mensagem do Biscoito da Sorte'
-              });
-            } catch (e) {
-              alert('Não foi possível compartilhar a imagem.');
-            }
-          }, 'image/jpeg', 0.92);
-        };
-        previewContainer.appendChild(shareBtn);
-      }
-
-      previewContainer.style.display = 'flex';
+      }, "image/jpeg", 0.92);
     };
-  });
+  };
+});
 }
 
 function getParams() {
