@@ -7,6 +7,91 @@ const messageRef = document.getElementById('messageRef');
 const shareBtn = document.getElementById('shareBtn');
 const note = document.getElementById('note');
 
+// Elementos para compartilhar com foto
+const photoShareBtn = document.getElementById('photoShareBtn');
+const photoInput = document.getElementById('photoInput');
+
+if (photoShareBtn && photoInput) {
+  photoShareBtn.addEventListener('click', () => {
+    photoInput.value = '';
+    photoInput.click();
+  });
+
+  photoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const img = new window.Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = () => {
+      // Cria canvas do tamanho da foto
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      // Monta texto (mensagem + referência)
+      const text = messageText.textContent || '';
+      const ref = messageRef.textContent || '';
+      const fullText = ref ? `${text} — ${ref}` : text;
+
+      // Quebra em linhas se necessário
+      ctx.font = `bold ${Math.floor(canvas.width/18)}px Segoe UI, Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const maxWidth = canvas.width * 0.85;
+      const words = fullText.split(' ');
+      let line = '';
+      let linesArr = [];
+      for (let word of words) {
+        let testLine = line + word + ' ';
+        let metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && line !== '') {
+          linesArr.push(line);
+          line = word + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      linesArr.push(line);
+
+      // Fundo branco semi-transparente para contraste
+      const padding = 24;
+      const lineHeight = Math.floor(canvas.width/18) + 10;
+      const totalHeight = linesArr.length * lineHeight;
+      const yStart = canvas.height/2 - totalHeight/2;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillRect(
+        canvas.width*0.05,
+        yStart - padding/2,
+        canvas.width*0.9,
+        totalHeight + padding
+      );
+
+      // Texto principal
+      ctx.fillStyle = '#123955';
+      linesArr.forEach((l, i) => {
+        ctx.fillText(l.trim(), canvas.width/2, yStart + i*lineHeight);
+      });
+
+      // Compartilhar ou abrir imagem
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        if (navigator.canShare && navigator.canShare({ files: [new File([blob], "biscoito.jpg", {type: blob.type})] })) {
+          navigator.share({
+            files: [new File([blob], "biscoito.jpg", {type: blob.type})],
+            title: 'Minha mensagem do Biscoito da Sorte'
+          });
+        } else {
+          window.open(url, '_blank');
+        }
+      }, 'image/jpeg', 0.92);
+    };
+  });
+}
+
 function getParams() {
   return new URLSearchParams(window.location.search);
 }

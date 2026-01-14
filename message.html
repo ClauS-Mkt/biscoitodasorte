@@ -9,7 +9,13 @@
 </head>
 <body>
   <main class="container">
-    <header class="header">
+    <div style="position:relative;width:100%;height:40px;overflow:hidden;">
+      <svg width="100%" height="40" viewBox="0 0 400 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;z-index:0;">
+        <path d="M0,30 Q100,50 200,20 Q300,-10 400,30 L400,0 L0,0 Z" fill="#b6d6f2" opacity="0.45"/>
+        <path d="M0,35 Q100,55 200,25 Q300,-5 400,35 L400,0 L0,0 Z" fill="#00C756" opacity="0.10"/>
+      </svg>
+    </div>
+    <header class="header" style="position:relative;z-index:1;">
       <h1>Mensagem do Biscoito</h1>
     </header>
 
@@ -18,12 +24,21 @@
       <footer id="messageRef" class="message-ref"></footer>
 
       <div class="actions">
-        <button id="shareBtn" class="btn outline">Compartilhar</button>
+        <button id="shareBtn" class="btn">📤 Compartilhar</button>
+        <button id="photoShareBtn" class="btn outline">📸 Compartilhar com foto</button>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
       </div>
     </section>
 
     <footer class="footer">
-      <small id="note">By: Clauber Souza • Compartilhe sua mensagem de hoje!!</small>
+      <small id="note">✨ By: Clauber Souza<br>Compartilhe sua mensagem de hoje!</small>
+    </footer>
+    <div style="position:relative;width:100%;height:36px;overflow:hidden;">
+      <svg width="100%" height="36" viewBox="0 0 400 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;left:0;z-index:0;">
+        <path d="M0,6 Q100,36 200,16 Q300,-4 400,26 L400,36 L0,36 Z" fill="#b6d6f2" opacity="0.45"/>
+        <path d="M0,16 Q100,36 200,26 Q300,6 400,16 L400,36 L0,36 Z" fill="#00C756" opacity="0.10"/>
+      </svg>
+    </div>
     </footer>
   </main>
 
