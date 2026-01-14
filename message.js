@@ -12,8 +12,7 @@ const photoShareBtn = document.getElementById('photoShareBtn');
 const photoInput = document.getElementById('photoInput');
 
 // === CONFIG DO UPLOAD (AJUSTE AQUI) ===
-const WORKER_UPLOAD_URL = "https://fotopainelmdl.clauber.workers.dev/upload"; // <-- troque
-const PUBLISH_TOKEN = "uygfw78fh7sv8093rfb"; // <-- troque (o mesmo do Worker)
+const WORKER_UPLOAD_URL = "http://localhost:3000/upload"; // <-- troque
 // ======================================
 
 function setUploadStatus(container, text, ok = false) {
