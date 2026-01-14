@@ -69,13 +69,13 @@ function drawCaption(ctx, text, x, y, w, h) {
   ctx.textBaseline = "middle";
 
   // tenta tamanhos (cabe melhor)
-  const sizes = [13, 12, 11, 10];
+  const sizes = [13, 12, 11, 10, 9]; // Tamanhos de fonte que tentaremos, do maior para o menor
   let lines = [text];
 
   for (const fs of sizes) {
     ctx.font = `700 ${fs}px monospace`;
 
-    // quebra em palavras e limita em 2 linhas
+    // Quebra o texto em palavras e limita em até 2 linhas
     const words = (text || "").split(/\s+/).filter(Boolean);
     const maxLines = 2;
     const out = [];
@@ -93,7 +93,7 @@ function drawCaption(ctx, text, x, y, w, h) {
     }
     if (line && out.length < maxLines) out.push(line);
 
-    // se sobrou palavra, coloca reticências na última linha
+    // Se ainda sobrar texto que não cabe, remove o excesso (com reticências)
     let final = out;
     if (words.join(" ").length > out.join(" ").length) {
       const last = out[out.length - 1] || "";
@@ -104,15 +104,15 @@ function drawCaption(ctx, text, x, y, w, h) {
       final = out.slice(0, -1).concat((cut || "").trim() + "…");
     }
 
-    // checa se 2 linhas cabem na altura
-    const lineH = fs + 2;
+    // Verifica se 2 linhas cabem na altura de 46px
+    const lineH = fs + 2; // Altura da linha com o tamanho da fonte
     if (final.length * lineH <= h) {
       lines = final;
       break;
     }
   }
 
-  // desenha centralizado verticalmente dentro do h
+  // Desenha o texto centralizado verticalmente
   const fsMatch = /(\d+)px/.exec(ctx.font);
   const fs = fsMatch ? parseInt(fsMatch[1], 10) : 12;
   const lineH = fs + 2;
@@ -124,6 +124,9 @@ function drawCaption(ctx, text, x, y, w, h) {
     ctx.fillText(l, x + w / 2, cy);
     cy += lineH;
   }
+
+  ctx.restore();
+}
 
   ctx.restore();
 }
