@@ -11,9 +11,6 @@ const note = document.getElementById('note');
 const photoShareBtn = document.getElementById('photoShareBtn');
 const photoInput = document.getElementById('photoInput');
 
-// URL do servidor local para upload
-const UPLOAD_URL = "https://maisie-transonic-unbusily.ngrok-free.dev/uploads/";
-
 function setUploadStatus(container, text, ok = false) {
   let el = container.querySelector("#uploadStatus");
   if (!el) {
@@ -28,15 +25,20 @@ function setUploadStatus(container, text, ok = false) {
   el.style.color = ok ? "#00C756" : "#123955";
 }
 
+// === CONFIG DO UPLOAD (AJUSTE AQUI) ===
+const WORKER_UPLOAD_URL = "http://localhost:3000/upload"; 
+// Se o frontend NÃO estiver no mesmo domínio do backend, use:
+// const WORKER_UPLOAD_URL = "http://SEU_IP_OU_DOMINIO:3000/uploads";
+// ======================================
 
 async function uploadToWorker(blob, caption) {
   const fd = new FormData();
-  fd.append("image", new File([blob], "polaroid.jpg", { type: "image/jpeg" })); // O nome do campo é 'image'
+  fd.append("image", blob, "polaroid.jpg"); // <-- TEM que ser "image"
   fd.append("caption", caption || "");
 
-  const res = await fetch("https://maisie-transonic-unbusily.ngrok-free.dev/uploads/", {  // A URL do seu servidor local
+  const res = await fetch(WORKER_UPLOAD_URL, {
     method: "POST",
-    body: fd,  // Envia o FormData com a imagem
+    body: fd,
   });
 
   if (!res.ok) {
@@ -45,6 +47,7 @@ async function uploadToWorker(blob, caption) {
   }
   return res.json().catch(() => ({}));
 }
+
 
 // desenha a foto no estilo "cover" dentro de uma área
 function drawCover(ctx, img, x, y, w, h) {
@@ -205,14 +208,14 @@ if (photoShareBtn && photoInput) {
     publishBtn.onclick = async () => {
       publishBtn.disabled = true;
       publishBtn.textContent = "Enviando…";
-      setUploadStatus(previewContainer, "Enviando para o painel…");
+      setUploadStatus(previewContainer, "Enviando imagem...");
       canvas.toBlob(async (blob) => {
         try {
           const result = await uploadToWorker(blob, captionInside);
           setUploadStatus(previewContainer, "Enviado ✅", true);
           publishBtn.textContent = "Publicado ✅";
-          photoInput.value = "";
-          console.log("Upload OK:", result);
+          // Faz algo com a resposta do backend
+          console.log("Upload successful:", result);
         } catch (err) {
           console.error(err);
           setUploadStatus(previewContainer, "Erro ao enviar ❌ (veja o console)");
@@ -336,6 +339,8 @@ shareBtn.addEventListener('click', async () => {
     console.error('Erro ao compartilhar:', e);
   }
 });
+
+
 
 // inicialização
 (async function init(){

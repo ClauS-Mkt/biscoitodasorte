@@ -2,6 +2,8 @@
 // tenta salvar em sessionStorage; se não for possível, passa text/ref na querystring.
 // Em seguida navega para message.html.
 
+
+
 const cookieBtn = document.getElementById('cookieBtn');
 
 let messages = [];
