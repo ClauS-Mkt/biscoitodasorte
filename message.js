@@ -26,7 +26,7 @@ function setUploadStatus(container, text, ok = false) {
 }
 
 // === CONFIG DO UPLOAD (AJUSTE AQUI) ===
-const WORKER_UPLOAD_URL = "http://192.168.0.37:3000/upload"; 
+const WORKER_UPLOAD_URL = "http://192.168.1.37:3000/upload"; 
 // Se o frontend NÃO estiver no mesmo domínio do backend, use:
 // const WORKER_UPLOAD_URL = "http://SEU_IP_OU_DOMINIO:3000/uploads";
 // ======================================
