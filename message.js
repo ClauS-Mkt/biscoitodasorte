@@ -188,10 +188,10 @@ if (photoShareBtn && photoInput) {
 
     // preview da polaroid pronta
     const previewImg = document.createElement("img");
-    previewImg.src = canvas.toDataURL("image/jpeg", 0.92);
+    previewImg.src = canvas.toDataURL("image/jpeg", 1.0);
     previewImg.alt = "Prévia polaroid";
-    previewImg.style.width = "200px";
-    previewImg.style.height = "230px";
+    previewImg.style.width = "300px";
+    previewImg.style.height = "330px";
     previewImg.style.borderRadius = "8px";
     previewImg.style.boxShadow = "0 10px 25px rgba(0,0,0,.35)";
     previewContainer.appendChild(previewImg);
